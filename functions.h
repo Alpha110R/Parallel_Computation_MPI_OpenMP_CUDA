@@ -4,3 +4,4 @@
 
 
 int computeOnGPU(int *data, int n);
+int *readFromFile(const char *fileName, int *numberOfPoints);
