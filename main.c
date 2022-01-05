@@ -29,9 +29,15 @@ int main(int argc, char *argv[]) {
        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
        arrayOfNumbers = readFromFile(FILE_NAME, &amountOfNumbers);
-       sizeArrayHistograma = amountOfNumbers/2;
+       sizeArrayHistograma = amountOfNumbers;
        MPI_Send(&sizeArrayHistograma, 1, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
-       MPI_Send(arrayOfNumbers, sizeArrayHistograma, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD)
+       MPI_Send(arrayOfNumbers, sizeArrayHistograma, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
+       histograma = (int*)calloc(sizeArrayHistograma, sizeof(int));
+      if(histograma == NULL) {
+         printf("Problem to allocate memotry histograma\n");
+         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+      }
+      masterCalcHistograma(arrayOfNumbers, amountOfNumbers, histograma);
     }
     else{
        MPI_Recv(&sizeArrayHistograma, 1, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -41,13 +47,13 @@ int main(int argc, char *argv[]) {
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
        }
       MPI_Recv(arrayOfNumbers, sizeArrayHistograma, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    }
-    histograma = (int*)malloc(sizeArrayHistograma* sizeof(int));
-    if(histgorama == NULL) {
+      histograma = (int*)calloc(sizeArrayHistograma, sizeof(int));
+      if(histograma == NULL) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-       }
+      }
+    }
+    
        
     MPI_Finalize();
 

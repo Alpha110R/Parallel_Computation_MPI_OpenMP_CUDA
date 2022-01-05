@@ -4,7 +4,7 @@
 #endif
 
 #include <stdio.h>
-#include "myProto.h"
+#include "functions.h"
 
 __global__  void incrementByOne(int *arr, int numElements) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;

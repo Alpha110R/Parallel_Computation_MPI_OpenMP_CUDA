@@ -3,8 +3,10 @@ build:
 	# note: cFunctions.c does not use mpi so we could 
 	# compile it using g++ instead of mpicxx 
 	mpicxx -fopenmp -c cFunctions.c -o cFunctions.o
+	mpicxx -fopenmp -c master.c -o master.o
+	mpicxx -fopenmp -c readWriteFunctions.c -o readWriteFunctions.o
 	nvcc -c cudaFunctions.cu -o cudaFunctions.o
-	mpicxx -fopenmp -o mpiCudaOpenMPI  main.o cFunctions.o cudaFunctions.o  /usr/local/cuda/lib64/libcudart_static.a -ldl -lrt
+	mpicxx -fopenmp -o mpiCudaOpenMPI  main.o cFunctions.o cudaFunctions.o master.o readWriteFunctions.o /usr/local/cuda/lib64/libcudart_static.a -ldl -lrt
 	
 clean:
 	rm -f *.o ./mpiCudaOpenMPI
