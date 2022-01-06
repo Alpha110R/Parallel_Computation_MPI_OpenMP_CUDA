@@ -18,7 +18,7 @@ void masterCalcHistograma(int* arrayOfNumbers, int amountOfNumbers, int* histogr
         //printf("thread #%d number: %d\n",omp_get_thread_num(),number);
         //printf("thread #%d histograma: number: %d count:%d\n",omp_get_thread_num(), number, privateHistograma[number]);
     }
-   printf("thread #%d histograma: count:%d\n",omp_get_thread_num(), privateHistograma[0]);
+   //printf("thread #%d histograma: count:%d\n",omp_get_thread_num(), privateHistograma[0]);
 
 }
 }
