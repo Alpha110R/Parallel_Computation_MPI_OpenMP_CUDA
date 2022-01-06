@@ -9,7 +9,6 @@
 #define TAG 0
 
 
-
 int main(int argc, char *argv[]) {
     int size,
         myRank,
@@ -27,7 +26,7 @@ int main(int argc, char *argv[]) {
        if (size != 2) {
        fprintf(stderr, "Run the program with two processes only\n");
        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-    }
+      }
        arrayOfNumbers = readFromFile(FILE_NAME, &amountOfNumbers);
        sizeArrayHistograma = amountOfNumbers;
        MPI_Send(&sizeArrayHistograma, 1, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
@@ -56,6 +55,8 @@ int main(int argc, char *argv[]) {
     
        
     MPI_Finalize();
+    free(arrayOfNumbers);
+    free(histograma);
 
     return 0;
 }
