@@ -7,8 +7,17 @@
 #include "functions.h"
 #define THREADS_PER_BLOCK 256
 __global__  void histograma(int *d_Aarray, int size, int* histograma) {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    __shared__ int sharedArray [size*2*2];
+    int id = blockIdx.x * blockDim.x + threadIdx.x;
+    int histogramSize = size*2*2;
+    __shared__ int sharedArrayHistogram [histogramSize];
+     sharedArrayHistogram[threadIdx.x] = 0;
+    __syncthreads();
+
+    if (id < size)
+        atomicAdd(&(sharedArrayHistogram[d_Aarray[id]]), 1);
+    __syncthreads();
+
+    atomicAdd(&histograma[threadIdx.x], sharedArrayHistogram[threadIdx.x]);
 
 }
 
