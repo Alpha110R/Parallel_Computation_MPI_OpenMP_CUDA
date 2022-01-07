@@ -8,35 +8,6 @@
 #define SLAVE 1
 #define TAG 0
 
-void slaveCalcHistogramaOpenMP(int* arrayOfNumbers, int amountOfNumbers, int* histograma){
-    //The slave calculate the first half of the array and the OpenMP the first of the half of the half
-#pragma omp parallel default(none) shared(arrayOfNumbers) shared(histograma) firstprivate(amountOfNumbers)
-{//The master calculate the second half of the array
-    int threadID,
-        numberOfThreads,
-        range,
-        counter=0;
-    threadID = omp_get_thread_num();
-    numberOfThreads = omp_get_num_threads();
-    range = amountOfNumbers / numberOfThreads;
-    for(int i= 0; i< amountOfNumbers; i++){
-        if(checkIfNumberInRange(threadID, range, arrayOfNumbers[i]) == 1){
-            histograma[arrayOfNumbers[i]]++;   
-        }
-    }
-}
-}
-
-int checkIfNumberInRange(int threadID, int range, int number){
-    int lastNumberInTheRange,
-        differenceRangeNumberToCheck;
-    lastNumberInTheRange = (range * threadID) + range -1;
-    differenceRangeNumberToCheck = lastNumberInTheRange - number;
-    if(differenceRangeNumberToCheck > range || differenceRangeNumberToCheck <0)
-        return 0;
-   return 1;
-}
-
 
 int main(int argc, char *argv[]) {
     int size,
@@ -72,7 +43,7 @@ int main(int argc, char *argv[]) {
        amountOfNumbersToSlave = amountOfNumbers/2;
        arrayOfNumbers = (int*)malloc(amountOfNumbersToSlave * sizeof(int));
        if(arrayOfNumbers == NULL) {
-         printf("Problem to allocate memotry arraOfNumbers\n");
+         printf("Problem to allocate memotry arrayOfNumbers\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
        }
       MPI_Recv(arrayOfNumbers, amountOfNumbersToSlave, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -81,7 +52,8 @@ int main(int argc, char *argv[]) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
-      slaveCalcHistogramaOpenMP(arrayOfNumbers, amountOfNumbersToSlave/2, histograma);
+      // slaveCalcHistogramaOpenMP(arrayOfNumbers, amountOfNumbersToSlave/2, histograma);
+      computeOnGPU(arrayOfNumbers, amountOfNumbersToSlave, histograma);
     }
     
        
