@@ -7,6 +7,7 @@
 #define MASTER 0
 #define SLAVE 1
 #define TAG 0
+#define HISTOGRAMA_SIZE 256
 
 
 int main(int argc, char *argv[]) {
@@ -23,7 +24,6 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     if(myRank == MASTER){
-       
        if (size != 2) {
        fprintf(stderr, "Run the program with two processes only\n");
        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
        arrayOfNumbers = readFromFile(FILE_NAME, &amountOfNumbers);
        MPI_Send(&amountOfNumbers, 1, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
        MPI_Send(arrayOfNumbers, amountOfNumbers/2, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
-       histograma = (int*)calloc(amountOfNumbers, sizeof(int));
+       histograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
       if(histograma == NULL) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -47,13 +47,13 @@ int main(int argc, char *argv[]) {
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
        }
       MPI_Recv(arrayOfNumbers, amountOfNumbersToSlave, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      histograma = (int*)calloc(amountOfNumbers, sizeof(int));
+      histograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
       if(histograma == NULL) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
       // slaveCalcHistogramaOpenMP(arrayOfNumbers, amountOfNumbersToSlave/2, histograma);
-      computeOnGPU(arrayOfNumbers, amountOfNumbersToSlave, histograma);
+      computeOnGPU(arrayOfNumbers + (amountOfNumbersToSlave/2), amountOfNumbersToSlave, histograma);//sends the second half of the array
     }
     
        
@@ -65,3 +65,14 @@ int main(int argc, char *argv[]) {
 }
 
 
+void mergeHistograms(int* histograma, int* histogramaToMerge){
+   for(int i=0; i<HISTOGRAMA_SIZE; i++){
+      histograma[i]+=histogramaToMerge[i];
+   }
+}
+
+void initializeArray(int* array, int size){
+   for(int i=0; i< size; i++){
+      array[i] = 0;
+   }
+}
