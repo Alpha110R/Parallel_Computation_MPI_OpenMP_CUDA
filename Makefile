@@ -6,7 +6,7 @@ build:
 	mpicxx -fopenmp -c readWriteFunctions.c -o readWriteFunctions.o
 	mpicxx -fopenmp -c slave.c -o slave.o
 	nvcc -c cudaFunctions.cu -o cudaFunctions.o
-	mpicxx -fopenmp -o mpiCudaOpenMPI  main.o cFunctions.o cudaFunctions.o master.o readWriteFunctions.o /usr/local/cuda/lib64/libcudart_static.a -ldl -lrt
+	mpicxx -fopenmp -o mpiCudaOpenMPI  main.o cudaFunctions.o master.o readWriteFunctions.o /usr/local/cuda/lib64/libcudart_static.a -ldl -lrt
 	
 clean:
 	rm -f *.o ./mpiCudaOpenMPI
