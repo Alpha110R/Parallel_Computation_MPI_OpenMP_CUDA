@@ -2,7 +2,6 @@ build:
 	mpicxx -fopenmp -c main.c -o main.o
 	# note: cFunctions.c does not use mpi so we could 
 	# compile it using g++ instead of mpicxx 
-	mpicxx -fopenmp -c cFunctions.c -o cFunctions.o
 	mpicxx -fopenmp -c master.c -o master.o
 	mpicxx -fopenmp -c readWriteFunctions.c -o readWriteFunctions.o
 	mpicxx -fopenmp -c slave.c -o slave.o

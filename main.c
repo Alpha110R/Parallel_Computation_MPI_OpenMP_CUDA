@@ -3,15 +3,18 @@
 #include <omp.h>
 #include <stdlib.h>
 #include "functions.h"
+#include "readWriteFunctions.h"
 #define FILE_NAME "input.txt"
 #define MASTER 0
 #define SLAVE 1
 #define TAG 0
 #define HISTOGRAMA_SIZE 256
+
+
 void slaveCalcHistogramaOpenMP(int* arrayOfNumbers, int amountOfNumbers, int* histograma){
-    //The slave calculate the first half of the array and the OpenMP the first of the half of the half
+    //The slave calculate the first half of the array and the OpenMP the first quarter of his array
 #pragma omp parallel default(none) shared(arrayOfNumbers) shared(histograma) firstprivate(amountOfNumbers)
-{//The master calculate the second half of the array
+{
     int threadID,
         numberOfThreads,
         range,
@@ -42,12 +45,12 @@ int main(int argc, char *argv[]) {
         myRank,
         amountOfNumbers,
         amountOfNumbersToSlave;
-    int* data;
     int* arrayOfNumbers;
-    int* histograma;
+    int histograma[HISTOGRAMA_SIZE]={0};
     int histogramaFromSlave[HISTOGRAMA_SIZE];
-    int* tryhistograma;
+    int* tryhistograma;//Array for sequantial histograma to test the parallel
     MPI_Status  status;
+    FILE* histograma_file;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -57,29 +60,31 @@ int main(int argc, char *argv[]) {
        fprintf(stderr, "Run the program with two processes only\n");
        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
+      histograma_file = fopen("histograma.txt","w");
+      if(!histograma_file){
+         printf("Error writing to file");
+      }
        arrayOfNumbers = readFromFile(FILE_NAME, &amountOfNumbers);
        MPI_Send(&amountOfNumbers, 1, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
        MPI_Send(arrayOfNumbers, amountOfNumbers/2, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
-       histograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
-       tryhistograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
-      if(histograma == NULL) {
-         printf("Problem to allocate memotry histograma\n");
-         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-      }
+       //tryhistograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
       masterCalcHistograma(arrayOfNumbers, amountOfNumbers, histograma);
       MPI_Recv(histogramaFromSlave, HISTOGRAMA_SIZE, MPI_INT, SLAVE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       mergeHistograms(histograma, histogramaFromSlave);
+      printSnakeIdRectangle(histograma, HISTOGRAMA_SIZE, histograma_file);
+      //////////////////////////////////////////
+      /*
       for(int i=0; i<HISTOGRAMA_SIZE;i++){
          printf("i: %d  number: %d\n", i, histograma[i]);
       }
       for(int i=0; i<amountOfNumbers;i++){
          tryhistograma[arrayOfNumbers[i]]++;
       }
-             printf("SEQUANTIAL ###########");
+      printf("SEQUANTIAL ###########");
       for(int i=0; i<HISTOGRAMA_SIZE; i++){
-  
          printf("i: %d  number: %d\n", i, tryhistograma[i]);
-      }
+      }*/
+      /////////////////////////////////////////
     }
     else{
        MPI_Recv(&amountOfNumbers, 1, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -90,22 +95,16 @@ int main(int argc, char *argv[]) {
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
        }
       MPI_Recv(arrayOfNumbers, amountOfNumbersToSlave, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      histograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
-      if(histograma == NULL) {
-         printf("Problem to allocate memotry histograma\n");
-         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-      }
-      int cudaHistograma[HISTOGRAMA_SIZE]= {0};
       int quarterOfFullSize = amountOfNumbersToSlave/2;
-      slaveCalcHistogramaOpenMP(arrayOfNumbers, (amountOfNumbersToSlave/2), histograma);
-      computeOnGPU(arrayOfNumbers + (quarterOfFullSize), quarterOfFullSize, histograma, cudaHistograma);//sends the second half of the array
+      slaveCalcHistogramaOpenMP(arrayOfNumbers, quarterOfFullSize, histograma);
+      computeOnGPU(arrayOfNumbers + (quarterOfFullSize), quarterOfFullSize, histograma);//sends the second half of the array
       MPI_Send(histograma, HISTOGRAMA_SIZE, MPI_INT, MASTER, TAG, MPI_COMM_WORLD);
     }
     
        
     MPI_Finalize();
     free(arrayOfNumbers);
-    free(histograma);
+    //free(histograma);
     
 
     return 0;

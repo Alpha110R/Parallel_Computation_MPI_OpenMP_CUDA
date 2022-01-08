@@ -1,4 +1,3 @@
-#include "functions.h"
 #include <stdio.h>
 #include <cstdlib>
 
@@ -27,4 +26,12 @@ int *readFromFile(const char *fileName, int *amountOfNumbers) {
     }
     fclose(fp);
     return arrayNumber;
+}
+
+void printSnakeIdRectangle(int* arr, int size, FILE* file){
+	fprintf(file,"The histograma for the array:\n");
+    for(int i=0 ;i< size ; i++){
+        fprintf(file,"The number #%d occures: %d\n", i, arr[i]);
+    }
+	fclose(file);
 }
