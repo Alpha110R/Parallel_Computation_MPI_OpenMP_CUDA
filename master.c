@@ -7,8 +7,7 @@
 #define HISTOGRAMA_SIZE 256
 
 void masterCalcHistograma(int* arrayOfNumbers, int amountOfNumbers, int* histograma){
-        int privateHistograma [HISTOGRAMA_SIZE];
-        initializeArray(privateHistograma, HISTOGRAMA_SIZE);
+        int privateHistograma [HISTOGRAMA_SIZE] = {0};
 #pragma omp parallel for default(none) shared(arrayOfNumbers) shared(amountOfNumbers) reduction (+: privateHistograma)
 //The master calculate the second half of the array
     for(int i=amountOfNumbers/2 ; i< amountOfNumbers; i++){

@@ -10,36 +10,6 @@
 #define TAG 0
 #define HISTOGRAMA_SIZE 256
 
-
-void slaveCalcHistogramaOpenMP(int* arrayOfNumbers, int amountOfNumbers, int* histograma){
-    //The slave calculate the first half of the array and the OpenMP the first quarter of his array
-#pragma omp parallel default(none) shared(arrayOfNumbers) shared(histograma) firstprivate(amountOfNumbers)
-{
-    int threadID,
-        numberOfThreads,
-        range,
-        counter=0;
-    threadID = omp_get_thread_num();
-    numberOfThreads = omp_get_num_threads();
-    range = amountOfNumbers / numberOfThreads;
-    for(int i= 0; i< amountOfNumbers; i++){
-        if(checkIfNumberInRange(threadID, range, arrayOfNumbers[i]) == 1){
-            histograma[arrayOfNumbers[i]]++;   
-        }
-    }
-}
-}
-
-int checkIfNumberInRange(int threadID, int range, int number){
-    int lastNumberInTheRange,
-        differenceRangeNumberToCheck;
-    lastNumberInTheRange = (range * threadID) + range -1;
-    differenceRangeNumberToCheck = lastNumberInTheRange - number;
-    if(differenceRangeNumberToCheck > range || differenceRangeNumberToCheck <0)
-        return 0;
-   return 1;
-}
-
 int main(int argc, char *argv[]) {
     int size,
         myRank,
@@ -74,9 +44,6 @@ int main(int argc, char *argv[]) {
       printSnakeIdRectangle(histograma, HISTOGRAMA_SIZE, histograma_file);
       //////////////////////////////////////////
       /*
-      for(int i=0; i<HISTOGRAMA_SIZE;i++){
-         printf("i: %d  number: %d\n", i, histograma[i]);
-      }
       for(int i=0; i<amountOfNumbers;i++){
          tryhistograma[arrayOfNumbers[i]]++;
       }
@@ -104,7 +71,6 @@ int main(int argc, char *argv[]) {
        
     MPI_Finalize();
     free(arrayOfNumbers);
-    //free(histograma);
     
 
     return 0;
@@ -113,11 +79,5 @@ int main(int argc, char *argv[]) {
 void mergeHistograms(int* histograma, int* histogramaToMerge){
    for(int i=0; i<HISTOGRAMA_SIZE; i++){
       histograma[i]+=histogramaToMerge[i];
-   }
-}
-
-void initializeArray(int* array, int size){
-   for(int i=0; i< size; i++){
-      array[i] = 0;
    }
 }

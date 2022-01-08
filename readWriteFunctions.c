@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <cstdlib>
-
+#include "readWriteFunctions.h"
 
 // Reads a number of numbers from the file.
 // The first line contains the amount of numbers defined.
