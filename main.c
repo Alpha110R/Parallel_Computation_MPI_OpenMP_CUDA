@@ -8,7 +8,34 @@
 #define SLAVE 1
 #define TAG 0
 #define HISTOGRAMA_SIZE 256
+void slaveCalcHistogramaOpenMP(int* arrayOfNumbers, int amountOfNumbers, int* histograma){
+    //The slave calculate the first half of the array and the OpenMP the first of the half of the half
+#pragma omp parallel default(none) shared(arrayOfNumbers) shared(histograma) firstprivate(amountOfNumbers)
+{//The master calculate the second half of the array
+    int threadID,
+        numberOfThreads,
+        range,
+        counter=0;
+    threadID = omp_get_thread_num();
+    numberOfThreads = omp_get_num_threads();
+    range = amountOfNumbers / numberOfThreads;
+    for(int i= 0; i< amountOfNumbers; i++){
+        if(checkIfNumberInRange(threadID, range, arrayOfNumbers[i]) == 1){
+            histograma[arrayOfNumbers[i]]++;   
+        }
+    }
+}
+}
 
+int checkIfNumberInRange(int threadID, int range, int number){
+    int lastNumberInTheRange,
+        differenceRangeNumberToCheck;
+    lastNumberInTheRange = (range * threadID) + range -1;
+    differenceRangeNumberToCheck = lastNumberInTheRange - number;
+    if(differenceRangeNumberToCheck > range || differenceRangeNumberToCheck <0)
+        return 0;
+   return 1;
+}
 
 int main(int argc, char *argv[]) {
     int size,
@@ -18,6 +45,8 @@ int main(int argc, char *argv[]) {
     int* data;
     int* arrayOfNumbers;
     int* histograma;
+    int histogramaFromSlave[HISTOGRAMA_SIZE];
+    int* tryhistograma;
     MPI_Status  status;
 
     MPI_Init(&argc, &argv);
@@ -32,11 +61,25 @@ int main(int argc, char *argv[]) {
        MPI_Send(&amountOfNumbers, 1, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
        MPI_Send(arrayOfNumbers, amountOfNumbers/2, MPI_INT, SLAVE, TAG, MPI_COMM_WORLD);
        histograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
+       tryhistograma = (int*)calloc(HISTOGRAMA_SIZE, sizeof(int));
       if(histograma == NULL) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
       masterCalcHistograma(arrayOfNumbers, amountOfNumbers, histograma);
+      MPI_Recv(histogramaFromSlave, HISTOGRAMA_SIZE, MPI_INT, SLAVE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      mergeHistograms(histograma, histogramaFromSlave);
+      for(int i=0; i<HISTOGRAMA_SIZE;i++){
+         printf("i: %d  number: %d\n", i, histograma[i]);
+      }
+      for(int i=0; i<amountOfNumbers;i++){
+         tryhistograma[arrayOfNumbers[i]]++;
+      }
+             printf("SEQUANTIAL ###########");
+      for(int i=0; i<HISTOGRAMA_SIZE; i++){
+  
+         printf("i: %d  number: %d\n", i, tryhistograma[i]);
+      }
     }
     else{
        MPI_Recv(&amountOfNumbers, 1, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -52,18 +95,21 @@ int main(int argc, char *argv[]) {
          printf("Problem to allocate memotry histograma\n");
          MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
       }
-      // slaveCalcHistogramaOpenMP(arrayOfNumbers, amountOfNumbersToSlave/2, histograma);
-      computeOnGPU(arrayOfNumbers + (amountOfNumbersToSlave/2), amountOfNumbersToSlave, histograma);//sends the second half of the array
+      int cudaHistograma[HISTOGRAMA_SIZE]= {0};
+      int quarterOfFullSize = amountOfNumbersToSlave/2;
+      slaveCalcHistogramaOpenMP(arrayOfNumbers, (amountOfNumbersToSlave/2), histograma);
+      computeOnGPU(arrayOfNumbers + (quarterOfFullSize), quarterOfFullSize, histograma, cudaHistograma);//sends the second half of the array
+      MPI_Send(histograma, HISTOGRAMA_SIZE, MPI_INT, MASTER, TAG, MPI_COMM_WORLD);
     }
     
        
     MPI_Finalize();
     free(arrayOfNumbers);
     free(histograma);
+    
 
     return 0;
 }
-
 
 void mergeHistograms(int* histograma, int* histogramaToMerge){
    for(int i=0; i<HISTOGRAMA_SIZE; i++){
